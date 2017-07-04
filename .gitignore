@@ -1,0 +1,13 @@
+target/
+
+# IntelliJ IDEA files
+.idea/
+*.iml
+*.iws
+*.ipr
+*.ids
+
+# Package Files #
+*.jar
+*.war
+*.ear
