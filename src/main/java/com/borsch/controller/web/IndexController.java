@@ -1,4 +1,4 @@
-package com.borsch.controller;
+package com.borsch.controller.web;
 
 import com.borsch.utils.EmailChecker;
 import org.springframework.beans.factory.annotation.Autowired;
