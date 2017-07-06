@@ -7,7 +7,6 @@ public enum EmailExistsEnum {
 
     NO_SMTP,
     NO_USER,
-    EXISTS,
     INVALID_EMAIL_ADDRESS,
     CAN_NOT_CHECK,
     VALID
