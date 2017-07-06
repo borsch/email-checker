@@ -1,5 +1,6 @@
 package com.borsch.utils;
 
+import com.borsch.domain.enums.EmailExistsEnum;
 import org.springframework.stereotype.Service;
 
 import javax.naming.NamingEnumeration;
@@ -82,12 +83,13 @@ public class EmailChecker {
         return res;
     }
 
-    public boolean isAddressValid( String address ) {
+    public EmailExistsEnum isAddressValid(String address ) {
         // Find the separator for the domain name
         int pos = address.indexOf('@');
 
         // If the address does not contain an '@', it's not valid
-        if (pos < 0) return false;
+        if (pos < 0)
+            return EmailExistsEnum.INVALID_EMAIL_ADDRESS;
 
         // Isolate the domain/machine name and get a list of mail exchangers
         String domain = address.substring(pos + 1);
@@ -96,20 +98,22 @@ public class EmailChecker {
             mxList = getMX(domain);
         }
         catch (NamingException ex) {
-            return false;
+            return EmailExistsEnum.NO_SMTP;
         }
 
         // Just because we can send mail to the domain, doesn't mean that the
         // address is valid, but if we can't, it's a sure sign that it isn't
-        if (mxList.isEmpty()) return false;
+        if (mxList.isEmpty()) return EmailExistsEnum.NO_SMTP;
 
         // Now, do the SMTP validation, try each mail exchanger until we get
         // a positive acceptance. It *MAY* be possible for one MX to allow
         // a message [store and forwarder for example] and another [like
         // the actual mail server] to reject it. This is why we REALLY ought
         // to take the preference into account.
+
+        EmailExistsEnum result = EmailExistsEnum.NO_USER;
+
         for (String mx : mxList) {
-            boolean valid = false;
             try {
                 int res;
                 //
@@ -119,6 +123,8 @@ public class EmailChecker {
 
                 res = hear(rdr);
                 if (res != 220) {
+                    result = EmailExistsEnum.NO_SMTP;
+
                     throw new Exception( "Invalid header" );
                 }
 
@@ -126,6 +132,8 @@ public class EmailChecker {
 
                 res = hear(rdr);
                 if (res != 250) {
+                    result = EmailExistsEnum.NO_SMTP;
+
                     throw new Exception("Not ESMTP");
                 }
 
@@ -133,6 +141,8 @@ public class EmailChecker {
                 say(wtr, "MAIL FROM: <oleh.kurpiak@gmail.com>");
                 res = hear(rdr);
                 if (res != 250) {
+                    result = EmailExistsEnum.CAN_NOT_CHECK;
+
                     throw new Exception("Sender rejected");
                 }
 
@@ -147,10 +157,12 @@ public class EmailChecker {
 
 
                 if (res != 250) {
-                    throw new Exception("Address is not valid!");
-                }
+                    result = EmailExistsEnum.NO_USER;
 
-                valid = true;
+                    throw new Exception("Address is not valid!");
+                } else {
+                    result = EmailExistsEnum.VALID;
+                }
 
                 close(rdr);
                 close(wtr);
@@ -160,10 +172,12 @@ public class EmailChecker {
 
             }
             finally {
-                if (valid) return true;
+                if (result == EmailExistsEnum.VALID) {
+                    return result;
+                }
             }
         }
-        return false;
+        return result;
     }
 
     private void close(Closeable closeable) {
