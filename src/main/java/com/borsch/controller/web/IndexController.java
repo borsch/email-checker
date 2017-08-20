@@ -28,7 +28,11 @@ public class IndexController {
             Model model
     ){
         model.addAttribute("email", email);
-        model.addAttribute("valid", emailChecker.isAddressValid(email));
+        String result = emailChecker.isAddressValid(email).toString();
+        model.addAttribute("valid_result", result);
+
+        result = result.replace("_", " ").toLowerCase();
+        model.addAttribute("valid_text", result);
 
         return "main/index";
     }
